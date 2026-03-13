@@ -1,0 +1,74 @@
+# go-ratelimit
+
+Token bucket rate limiter for Go with per-key limiting and HTTP middleware. Zero external dependencies.
+
+## Installation
+
+```bash
+go get github.com/philiprehberger/go-ratelimit
+```
+
+## Usage
+
+### Basic Limiter
+
+```go
+import "github.com/philiprehberger/go-ratelimit"
+
+// Allow 10 requests per second with a burst of 20.
+lim := ratelimit.New(10, 20)
+
+if lim.Allow() {
+    // Request allowed.
+}
+
+// Block until a token is available.
+err := lim.Wait(ctx)
+```
+
+### Per-Key Limiter
+
+```go
+// Rate limit each user independently.
+kl := ratelimit.NewKeyed(5, 10)
+
+if kl.Allow(userID) {
+    // Allowed for this user.
+}
+
+// Clean up inactive keys.
+kl.Remove(userID)
+```
+
+### HTTP Middleware
+
+```go
+// Global rate limit.
+lim := ratelimit.New(100, 200)
+mux.Handle("/api", ratelimit.Middleware(lim)(apiHandler))
+
+// Per-IP rate limit.
+kl := ratelimit.NewKeyed(10, 20)
+mux.Handle("/api", ratelimit.KeyedMiddleware(kl, ratelimit.IPKeyFunc)(apiHandler))
+```
+
+## API
+
+| Function / Type | Description |
+|-----------------|-------------|
+| `New(rate, burst)` | Create a token bucket limiter |
+| `Limiter.Allow()` | Non-blocking check, returns true if token available |
+| `Limiter.Wait(ctx)` | Block until token available or context cancelled |
+| `Limiter.Tokens()` | Current available tokens |
+| `NewKeyed(rate, burst)` | Create a per-key limiter |
+| `KeyedLimiter.Allow(key)` | Non-blocking per-key check |
+| `KeyedLimiter.Wait(ctx, key)` | Blocking per-key wait |
+| `KeyedLimiter.Remove(key)` | Remove a key's limiter |
+| `KeyedLimiter.Size()` | Number of tracked keys |
+| `Middleware(limiter)` | HTTP middleware returning 429 when exceeded |
+| `KeyedMiddleware(limiter, keyFunc)` | Per-key HTTP middleware |
+| `IPKeyFunc(r)` | Extract client IP as rate limit key |
+
+## License
+
+MIT
