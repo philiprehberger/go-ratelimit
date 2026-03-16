@@ -1,5 +1,9 @@
 # go-ratelimit
 
+[![CI](https://github.com/philiprehberger/go-ratelimit/actions/workflows/ci.yml/badge.svg)](https://github.com/philiprehberger/go-ratelimit/actions/workflows/ci.yml)
+[![Go Reference](https://pkg.go.dev/badge/github.com/philiprehberger/go-ratelimit.svg)](https://pkg.go.dev/github.com/philiprehberger/go-ratelimit)
+[![License](https://img.shields.io/github/license/philiprehberger/go-ratelimit)](LICENSE)
+
 Token bucket rate limiter for Go with per-key limiting and HTTP middleware. Zero external dependencies.
 
 ## Installation
@@ -68,6 +72,13 @@ mux.Handle("/api", ratelimit.KeyedMiddleware(kl, ratelimit.IPKeyFunc)(apiHandler
 | `Middleware(limiter)` | HTTP middleware returning 429 when exceeded |
 | `KeyedMiddleware(limiter, keyFunc)` | Per-key HTTP middleware |
 | `IPKeyFunc(r)` | Extract client IP as rate limit key |
+
+## Development
+
+```bash
+go test ./...
+go vet ./...
+```
 
 ## License
 
