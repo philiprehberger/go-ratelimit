@@ -131,6 +131,85 @@ func TestNew_StartsWithBurstTokens(t *testing.T) {
 	}
 }
 
+func TestSetRate_ChangesRateAndBurst(t *testing.T) {
+	lim := New(10, 5)
+
+	// Drain all tokens.
+	for i := 0; i < 5; i++ {
+		lim.Allow()
+	}
+	if lim.Allow() {
+		t.Fatal("should be exhausted with burst=5")
+	}
+
+	// Increase burst to 3 (tokens stay at 0, but burst cap changes).
+	lim.SetRate(10, 3)
+
+	// Wait for a refill.
+	time.Sleep(50 * time.Millisecond)
+
+	// Should have ~0.5 tokens (10 * 0.05), not enough for Allow.
+	// But let's set a high rate to get tokens quickly.
+	lim.SetRate(1000, 3)
+	time.Sleep(10 * time.Millisecond)
+
+	if !lim.Allow() {
+		t.Fatal("Allow() should succeed after SetRate with high rate")
+	}
+
+	// Verify burst cap: tokens should not exceed 3.
+	time.Sleep(50 * time.Millisecond)
+	tokens := lim.Tokens()
+	if tokens > 3.01 {
+		t.Fatalf("Tokens() = %f, should not exceed new burst of 3", tokens)
+	}
+}
+
+func TestSetRate_ClampTokensToBurst(t *testing.T) {
+	lim := New(10, 10)
+
+	// Starts with 10 tokens. Reduce burst to 2.
+	lim.SetRate(10, 2)
+
+	tokens := lim.Tokens()
+	if tokens > 2.01 {
+		t.Fatalf("Tokens() = %f, should be clamped to new burst of 2", tokens)
+	}
+}
+
+func TestStats_TracksAllowedAndRejected(t *testing.T) {
+	lim := New(10, 3)
+
+	// 3 allowed.
+	for i := 0; i < 3; i++ {
+		lim.Allow()
+	}
+	// 2 rejected.
+	lim.Allow()
+	lim.Allow()
+
+	stats := lim.Stats()
+	if stats.Allowed != 3 {
+		t.Fatalf("Stats().Allowed = %d, expected 3", stats.Allowed)
+	}
+	if stats.Rejected != 2 {
+		t.Fatalf("Stats().Rejected = %d, expected 2", stats.Rejected)
+	}
+}
+
+func TestStats_WaitIncrementsAllowed(t *testing.T) {
+	lim := New(1000, 2)
+
+	ctx := context.Background()
+	lim.Wait(ctx)
+	lim.Wait(ctx)
+
+	stats := lim.Stats()
+	if stats.Allowed != 2 {
+		t.Fatalf("Stats().Allowed = %d, expected 2", stats.Allowed)
+	}
+}
+
 func TestZeroRate(t *testing.T) {
 	lim := New(0, 2)
 

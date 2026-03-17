@@ -4,17 +4,26 @@ package ratelimit
 import (
 	"context"
 	"sync"
+	"sync/atomic"
 	"time"
 )
+
+// LimiterStats holds rate limiter metrics.
+type LimiterStats struct {
+	Allowed  int64
+	Rejected int64
+}
 
 // Limiter implements a token bucket rate limiter. Tokens are added at a fixed
 // rate up to a maximum burst size. Each call to Allow or Wait consumes one token.
 type Limiter struct {
-	rate   float64
-	burst  int
-	tokens float64
-	last   time.Time
-	mu     sync.Mutex
+	rate     float64
+	burst    int
+	tokens   float64
+	last     time.Time
+	mu       sync.Mutex
+	allowed  atomic.Int64
+	rejected atomic.Int64
 }
 
 // New creates a new Limiter that allows events at rate tokens per second with
@@ -32,14 +41,17 @@ func New(rate float64, burst int) *Limiter {
 // available and returns true. Otherwise it returns false without blocking.
 func (l *Limiter) Allow() bool {
 	l.mu.Lock()
-	defer l.mu.Unlock()
 
 	l.refill()
 
 	if l.tokens >= 1 {
 		l.tokens--
+		l.mu.Unlock()
+		l.allowed.Add(1)
 		return true
 	}
+	l.mu.Unlock()
+	l.rejected.Add(1)
 	return false
 }
 
@@ -54,6 +66,7 @@ func (l *Limiter) Wait(ctx context.Context) error {
 		if l.tokens >= 1 {
 			l.tokens--
 			l.mu.Unlock()
+			l.allowed.Add(1)
 			return nil
 		}
 
@@ -85,6 +98,28 @@ func (l *Limiter) Tokens() float64 {
 
 	l.refill()
 	return l.tokens
+}
+
+// SetRate updates the rate and burst at runtime. Thread-safe. The current
+// token count is adjusted if it exceeds the new burst size.
+func (l *Limiter) SetRate(rate float64, burst int) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
+	l.refill()
+	l.rate = rate
+	l.burst = burst
+	if l.tokens > float64(burst) {
+		l.tokens = float64(burst)
+	}
+}
+
+// Stats returns the current allowed/rejected counts.
+func (l *Limiter) Stats() LimiterStats {
+	return LimiterStats{
+		Allowed:  l.allowed.Load(),
+		Rejected: l.rejected.Load(),
+	}
 }
 
 // refill adds tokens based on time elapsed since the last refill. The token

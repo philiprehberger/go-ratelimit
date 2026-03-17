@@ -12,6 +12,7 @@ type KeyedLimiter struct {
 	mu       sync.Mutex
 	rate     float64
 	burst    int
+	onReject func(key string)
 }
 
 // NewKeyed creates a new KeyedLimiter. Each key that is seen for the first time
@@ -28,7 +29,16 @@ func NewKeyed(rate float64, burst int) *KeyedLimiter {
 // true if a token is available for that key, consuming it. If the key has not
 // been seen before, a new limiter is created automatically.
 func (kl *KeyedLimiter) Allow(key string) bool {
-	return kl.getLimiter(key).Allow()
+	allowed := kl.getLimiter(key).Allow()
+	if !allowed {
+		kl.mu.Lock()
+		fn := kl.onReject
+		kl.mu.Unlock()
+		if fn != nil {
+			fn(key)
+		}
+	}
+	return allowed
 }
 
 // Wait blocks until a token is available for the given key or the context is
@@ -50,6 +60,14 @@ func (kl *KeyedLimiter) Size() int {
 	kl.mu.Lock()
 	defer kl.mu.Unlock()
 	return len(kl.limiters)
+}
+
+// OnReject registers a callback that fires when a request is rejected.
+// The callback receives the key that was rate limited. Pass nil to clear.
+func (kl *KeyedLimiter) OnReject(fn func(key string)) {
+	kl.mu.Lock()
+	defer kl.mu.Unlock()
+	kl.onReject = fn
 }
 
 // getLimiter returns the limiter for the given key, creating one if it does

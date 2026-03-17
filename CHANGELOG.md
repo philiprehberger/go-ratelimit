@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.0
+
+- Add `Limiter.SetRate` for runtime rate and burst reconfiguration
+- Add `LimiterStats` and `Limiter.Stats` for allowed/rejected request counters
+- Add `KeyedLimiter.OnReject` callback for rejection notifications
+
 ## 0.1.1
 
 - Add badges and Development section to README

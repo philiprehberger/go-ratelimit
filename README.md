@@ -44,6 +44,41 @@ if kl.Allow(userID) {
 kl.Remove(userID)
 ```
 
+### Runtime Configuration
+
+```go
+lim := ratelimit.New(10, 20)
+
+// Later, adjust rate and burst without creating a new limiter.
+lim.SetRate(50, 100)
+```
+
+### Metrics
+
+```go
+lim := ratelimit.New(10, 5)
+
+lim.Allow() // true
+lim.Allow() // true
+lim.Allow() // false (if burst exhausted)
+
+stats := lim.Stats()
+fmt.Println(stats.Allowed)  // 2
+fmt.Println(stats.Rejected) // 1
+```
+
+### Rejection Callback
+
+```go
+kl := ratelimit.NewKeyed(5, 10)
+
+kl.OnReject(func(key string) {
+    log.Printf("rate limited: %s", key)
+})
+
+kl.Allow(userID)
+```
+
 ### HTTP Middleware
 
 ```go
@@ -64,11 +99,14 @@ mux.Handle("/api", ratelimit.KeyedMiddleware(kl, ratelimit.IPKeyFunc)(apiHandler
 | `Limiter.Allow()` | Non-blocking check, returns true if token available |
 | `Limiter.Wait(ctx)` | Block until token available or context cancelled |
 | `Limiter.Tokens()` | Current available tokens |
+| `Limiter.SetRate(rate, burst)` | Update rate and burst at runtime |
+| `Limiter.Stats()` | Get allowed/rejected counters |
 | `NewKeyed(rate, burst)` | Create a per-key limiter |
 | `KeyedLimiter.Allow(key)` | Non-blocking per-key check |
 | `KeyedLimiter.Wait(ctx, key)` | Blocking per-key wait |
 | `KeyedLimiter.Remove(key)` | Remove a key's limiter |
 | `KeyedLimiter.Size()` | Number of tracked keys |
+| `KeyedLimiter.OnReject(fn)` | Register rejection callback |
 | `Middleware(limiter)` | HTTP middleware returning 429 when exceeded |
 | `KeyedMiddleware(limiter, keyFunc)` | Per-key HTTP middleware |
 | `IPKeyFunc(r)` | Extract client IP as rate limit key |

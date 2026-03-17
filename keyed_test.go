@@ -93,6 +93,56 @@ func TestKeyedLimiter_Size(t *testing.T) {
 	}
 }
 
+func TestKeyedLimiter_OnReject(t *testing.T) {
+	kl := NewKeyed(10, 1)
+
+	var rejectedKeys []string
+	kl.OnReject(func(key string) {
+		rejectedKeys = append(rejectedKeys, key)
+	})
+
+	// First call succeeds, second is rejected.
+	kl.Allow("user1")
+	kl.Allow("user1") // rejected
+
+	kl.Allow("user2")
+	kl.Allow("user2") // rejected
+	kl.Allow("user2") // rejected
+
+	if len(rejectedKeys) != 3 {
+		t.Fatalf("OnReject called %d times, expected 3", len(rejectedKeys))
+	}
+	if rejectedKeys[0] != "user1" {
+		t.Fatalf("rejectedKeys[0] = %q, expected %q", rejectedKeys[0], "user1")
+	}
+	if rejectedKeys[1] != "user2" {
+		t.Fatalf("rejectedKeys[1] = %q, expected %q", rejectedKeys[1], "user2")
+	}
+	if rejectedKeys[2] != "user2" {
+		t.Fatalf("rejectedKeys[2] = %q, expected %q", rejectedKeys[2], "user2")
+	}
+}
+
+func TestKeyedLimiter_OnReject_Nil(t *testing.T) {
+	kl := NewKeyed(10, 1)
+
+	// Should not panic when no callback is set.
+	kl.Allow("a")
+	kl.Allow("a") // rejected, no callback
+
+	// Set and then clear.
+	called := false
+	kl.OnReject(func(key string) { called = true })
+	kl.OnReject(nil)
+
+	kl.Allow("b")
+	kl.Allow("b") // rejected, callback cleared
+
+	if called {
+		t.Fatal("OnReject callback was called after being cleared")
+	}
+}
+
 func TestKeyedLimiter_RemoveNonExistentKey(t *testing.T) {
 	kl := NewKeyed(10, 1)
 
