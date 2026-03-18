@@ -4,7 +4,7 @@
 [![Go Reference](https://pkg.go.dev/badge/github.com/philiprehberger/go-ratelimit.svg)](https://pkg.go.dev/github.com/philiprehberger/go-ratelimit)
 [![License](https://img.shields.io/github/license/philiprehberger/go-ratelimit)](LICENSE)
 
-Token bucket rate limiter for Go with per-key limiting and HTTP middleware. Zero external dependencies.
+Token bucket rate limiter for Go with per-key limiting and HTTP middleware. Zero external dependencies
 
 ## Installation
 
