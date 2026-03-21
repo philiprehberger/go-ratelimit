@@ -1,8 +1,6 @@
 # go-ratelimit
 
-[![CI](https://github.com/philiprehberger/go-ratelimit/actions/workflows/ci.yml/badge.svg)](https://github.com/philiprehberger/go-ratelimit/actions/workflows/ci.yml)
-[![Go Reference](https://pkg.go.dev/badge/github.com/philiprehberger/go-ratelimit.svg)](https://pkg.go.dev/github.com/philiprehberger/go-ratelimit)
-[![License](https://img.shields.io/github/license/philiprehberger/go-ratelimit)](LICENSE)
+[![CI](https://github.com/philiprehberger/go-ratelimit/actions/workflows/ci.yml/badge.svg)](https://github.com/philiprehberger/go-ratelimit/actions/workflows/ci.yml) [![Go Reference](https://pkg.go.dev/badge/github.com/philiprehberger/go-ratelimit.svg)](https://pkg.go.dev/github.com/philiprehberger/go-ratelimit) [![License](https://img.shields.io/github/license/philiprehberger/go-ratelimit)](LICENSE)
 
 Token bucket rate limiter for Go with per-key limiting and HTTP middleware. Zero external dependencies
 

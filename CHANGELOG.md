@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.1
+
+- Consolidate README badges onto single line
+
 ## 0.2.0
 
 - Add `Limiter.SetRate` for runtime rate and burst reconfiguration
